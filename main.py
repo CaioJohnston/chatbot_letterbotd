@@ -1,6 +1,6 @@
 from tkinter import *
 from PIL import Image, ImageTk
-from dataframe import main
+from dataframe import recommend_keyword_movie, recommend_movie_from_list
 import unicodedata
 
 root = Tk()
@@ -8,6 +8,8 @@ path = 4
 stage = 0
 fails = 0
 interaction = 0
+keyword = ''
+movies = []
 profile = []
 
 
@@ -21,9 +23,11 @@ def click(event=None):
     global stage
     global fails
     global interaction
+    global keyword
+    global movies
     global profile
 
-    welcome_message = ('Olá! Vai ser um prazer ajudar!' + '\n' + 'Você deseja uma recomendação por filme ou por perguntas?')
+    welcome_message = ('Bot: Olá! Vai ser um prazer ajudar!' + '\n' + 'Você deseja uma recomendação por filme ou por perguntas?')
 
     send = 'Você: ' + a.get()
     text.insert(END, '\n' + send)
@@ -56,7 +60,7 @@ def click(event=None):
             if interaction == 0:
                 text.insert(END, '\n')
             else:
-                text.insert(END, '\n' + 'Olá! Vai ser um prazer ajudar!' + '\n' + 'Você deseja uma recomendação por filme ou por perguntas?')
+                text.insert(END, '\n' + 'Bot: Olá! Vai ser um prazer ajudar!' + '\n' + 'Você deseja uma recomendação por filme ou por perguntas?')
         elif any(keyword in user_input for keyword in goback_keywords):
             if fails == 5:
                 text.insert(END, '\n' + 'Bot: Parece que você está com dificuldades para utilizar o chat...' + '\n' + 'Entre em contato com nosso supervisor: https://chat.openai.com/')
@@ -104,7 +108,7 @@ def click(event=None):
                     user_input = 'curto'
                 profile.append(user_input)
                 stage = 2
-                text.insert(END, '\n' + 'O filme precisa ter sido lançado antes ou depois dos anos 2000?')
+                text.insert(END, '\n' + 'Bot: O filme precisa ter sido lançado antes ou depois dos anos 2000?')
             elif any(keyword in user_input for keyword in goback_keywords):
                 path = 0
                 stage = 0
@@ -120,7 +124,7 @@ def click(event=None):
                     user_input = 'antigo'
                 elif any(keyword in user_input for keyword in ['depois de 2000', 'depois', 'depois dos anos 2000', 'novo']):
                     user_input = 'novo'
-                text.insert(END, '\n' + 'Achamos um filme para você...')
+                text.insert(END, '\n' + 'Bot: Achamos um filme para você...')
                 profile.append(user_input)
                 print(profile)
                 display_image(recommend_movie(profile))
@@ -140,14 +144,32 @@ def click(event=None):
         else:
             path = 0
             stage = 0
-            profile = [0] * len(profile)
+            profile = []
             text.insert(END, '\n' + 'Bot: Algo deu errado mas sem problemas! Vamos do começo...' + '\n' + '\n')
             text.insert(END, welcome_message)
     elif path == 2:
-        if 'algo diferente' in user_input:
-            text.insert(END, '\n' + 'Bot: Resposta específica para algo diferente no path2')
+        text.insert(END, '\n' + 'Bot: Buscando recomendações com base na palavra-chave...')
+        movies = recommend_keyword_movie(user_input)
+        keyword = user_input
+        if movies:
+            text.insert(END, '\n' + 'Bot: Encontramos alguns filmes relacionados à palavra-chave:')
+            for i, movie in enumerate(movies, 1):
+                text.insert(END, f'\n{i}. {movie}')
+            path = 2.1
         else:
-            text.insert(END, '\n' + 'Bot: Outra resposta no path2')
+            text.insert(END, '\n' + 'Bot: Não encontramos filmes relacionados à palavra-chave. :( Tente novamente.')
+    elif path == 2.1:
+        path = 0
+        stage = 0
+        profile = []
+        movies_list = recommend_keyword_movie(keyword)
+        recommendation_result = recommend_movie_from_list(movies_list, user_input)
+        print(recommendation_result)
+        if recommendation_result == 'Escolha inválida. Por favor, escolha um número válido.':
+            path = 2.1
+        else:
+            pass
+        text.insert(END, '\n' + recommendation_result)
 
     text.yview(END)
     a.delete(0, 'end')
